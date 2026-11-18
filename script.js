@@ -1,11 +1,10 @@
-// --- FUNCIONES DE UTILIDAD BÁSICA ---
-// Abrevia la búsqueda de elementos por su ID en el HTML (como un buscador mágico)
+// Busqueda ID
 const $ = id => document.getElementById(id);
 
-// Formatea los números a pesos colombianos (COP), por ejemplo: $ 15.000
+// Format a COP
 const formatCurrency = n => n?.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }) || '$0';
 
-// Llaves para guardar la información en la memoria del navegador (localStorage)
+// Guarda informacion con llaves
 const LS_KEY = 'storage_inventory_v1', OWNER_KEY = 'storage_owner_v1';
 let inventario = {}; // Aquí vivirá nuestra lista de productos
 
@@ -14,7 +13,6 @@ const owner = $('owner'), nameI = $('name'), qty = $('qty'), price = $('price');
 const addBtn = $('addBtn'), clearBtn = $('clearBtn'), logE = $('log'), tbody = $('tbody');
 const search = $('search'), totalE = $('grandTotal'), calcBtn = $('calcTotal'), expBtn = $('exportBtn');
 
-// --- FUNCIONES DE MEMORIA (LocalStorage) ---
 // Carga los datos guardados previamente cuando se abre la página
 function load() {
     inventario = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
@@ -26,12 +24,12 @@ function save() {
     localStorage.setItem(LS_KEY, JSON.stringify(inventario));
 }
 
-// Guarda el nombre del dueño de la tienda de forma permanente
+// Guarda nombre
 function saveOwner() {
     localStorage.setItem(OWNER_KEY, owner.value.trim());
 }
 
-// Muestra mensajitos de registro en pantalla (historial de eventos)
+// Msg de registro
 function logMessage(m, t = 'muted') {
     const d = document.createElement('div');
     d.textContent = m;
@@ -39,20 +37,19 @@ function logMessage(m, t = 'muted') {
     logE.prepend(d);
 }
 
-// --- VALIDACIONES (Guardianes de reglas) ---
-// Valida que el nombre no esté vacío y no sea solo números
+// --- VALIDACIONES
 const vNom = n => !n.trim() ? { ok: false, msg: 'El nombre no puede estar vacío.' } : /^\d+$/.test(n) ? { ok: false, msg: 'No se permiten solo dígitos.' } : { ok: true };
-// Valida que la cantidad sea un número mayor a 0
+// Valida cantidad
 const vCant = c => isNaN(c) || c <= 0 ? { ok: false, msg: 'La cantidad debe ser mayor a 0.' } : { ok: true };
-// Valida que el precio no sea negativo
+// Valida precio
 const vPrec = p => isNaN(p) || p < 0 ? { ok: false, msg: 'El precio no puede ser negativo.' } : { ok: true };
 
-// --- RENDERIZADO (Dibujar la tabla en pantalla) ---
+// Renderiza tabla
 function render(filter = '') {
-    tbody.innerHTML = ''; // Limpiamos la tabla antes de dibujarla de nuevo
+    tbody.innerHTML = ''; // Limpia tabla
     const keys = Object.keys(inventario).filter(k => k.includes(filter.toLowerCase()));
 
-    // Si no hay productos, mostramos un mensaje de que está vacío
+    // Si no hay productos, mensaje de "vacio"
     if (!keys.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="empty">No hay productos — agrega el primero.</td></tr>';
         totalE.textContent = formatCurrency(0);
@@ -60,7 +57,7 @@ function render(filter = '') {
     }
 
     let i = 0, gt = 0;
-    // Recorremos cada producto para armar sus filas en la tabla HTML
+    // Construye la tabla con un "for"
     for (const k of keys) {
         i++;
         const it = inventario[k];
@@ -78,11 +75,11 @@ function render(filter = '') {
             </td>`;
         tbody.append(tr);
     }
-    totalE.textContent = formatCurrency(gt); // Actualizamos el total general en pantalla
+    totalE.textContent = formatCurrency(gt);
 }
 
-// --- ACCIONES PRINCIPALES ---
-// Agrega un nuevo producto validando todas las reglas
+
+// Agrega producto
 function agregarProducto() {
     saveOwner();
     const n = nameI.value.trim().toLowerCase();
@@ -93,31 +90,33 @@ function agregarProducto() {
     const vc = vCant(c); if (!vc.ok) { alert(vc.msg); return; }
     const vp = vPrec(p); if (!vp.ok) { alert(vp.msg); return; }
 
-    // Regla: Máximo 10 productos en la tienda
+    // Validacion
+
+    // 10 productos maximos
     if (Object.keys(inventario).length >= 10 && !inventario[n]) {
         alert('Inventario lleno (Máximo 10 productos).');
         return;
     }
 
-    // Regla: No duplicar productos
+    // No duplica objetos
     if (inventario[n]) {
         alert('El producto ya existe en el inventario.');
         return;
     }
 
-    // Guardamos el producto en nuestro objeto inventario
+    // Guarda producto
     inventario[n] = { cantidad: c, precio: p };
     save();
     render(search.value);
     logMessage(`Agregado: ${n} (x${c})`, 'success');
     
-    // Limpiamos los inputs del formulario
+    // Limpia inputs
     nameI.value = '';
     qty.value = '';
     price.value = '';
 }
 
-// Elimina un producto del inventario buscando por su clave (nombre)
+// Elimina producto
 function eliminarProducto(k) {
     if (!confirm(`¿Eliminar "${k}"?`)) return;
     delete inventario[k];
@@ -142,7 +141,7 @@ function exportarDatos() {
     a.click();
 }
 
-// --- CONEXIÓN DE EVENTOS (Escuchadores de botones) ---
+// --- CONEXIÓN DE EVENTOS (Escuchadores de botones)
 addBtn.onclick = agregarProducto;
 clearBtn.onclick = () => { nameI.value = ''; qty.value = ''; price.value = ''; };
 calcBtn.onclick = calcularTotal;
@@ -150,7 +149,7 @@ expBtn.onclick = exportarDatos;
 search.oninput = e => render(e.target.value);
 owner.onchange = saveOwner;
 
-// --- INICIALIZACIÓN ---
+// --- INICIALIZACIÓN
 // Al arrancar la página, cargamos los datos y dibujamos la interfaz
 load();
 render();
